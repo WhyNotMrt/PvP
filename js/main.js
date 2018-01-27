@@ -1,6 +1,6 @@
 // Hero
 
-function Hero(game, x, y, hero ,side){
+function Hero(game, x, y, hero ,side, nbr){
 	Phaser.Sprite.call(this, game, x, y, hero);
 	this.anchor.set(0.5, 0.5);
 	this.game.physics.enable(this);
@@ -14,6 +14,9 @@ function Hero(game, x, y, hero ,side){
 	this.Weapon.pistol(game, side);
 	this.Weapon.track(this);
 	this.direction = 0;
+	this.nbr = nbr;
+	this.spawnPointX = x; 
+	this.spawnPointY = y; 
 }
 Hero.prototype = Object.create(Phaser.Sprite.prototype);
 Hero.prototype.constructor = Hero;
@@ -208,7 +211,7 @@ Weapon.prototype.side = function(side){
 // Init Game
 
 PlayState = {};
-const LEVEL_COUNT = 3;
+const LEVEL_COUNT = 4;
 PlayState.init = function(data){
 	this.game.renderer.renderSession.roundPixels = true;
 	this.keys = this.game.input.keyboard.addKeys({
@@ -224,10 +227,13 @@ PlayState.init = function(data){
 	});
 	
 	this.coinPickupCount = 0;
+	this.deathHero1 = 0;
+	this.deathHero2 = 0;
 	this.hasKey = false;
 	this.level = (data.level || 0) % LEVEL_COUNT;
 };
 PlayState.preload = function(){
+	this.game.load.json('level:3', 'data/level03.json');
 	this.game.load.json('level:2', 'data/level02.json');
 	this.game.load.json('level:1', 'data/level01.json');
 	this.game.load.json('level:0', 'data/level00.json');
@@ -274,17 +280,45 @@ PlayState.create = function(){
 };
 PlayState._createHud = function(){
 	const NUMBERS_STR = '0123456789X';
+	
+	// Key
 	this.keyIcon = this.game.make.image(0, 19, 'icon:key');
 	this.keyIcon.anchor.set(0, 0.5);
+	
+	// Coin
 	this.coinFont = this.game.add.retroFont('font:numbers', 20, 26, NUMBERS_STR, 6);
 	let coinIcon = this.game.make.image(this.keyIcon.width + 7, 0, 'icon:coin');
 	let coinScoreImg = this.game.make.image(coinIcon.x + coinIcon.width, coinIcon.height/2, this.coinFont);
 	coinScoreImg.anchor.set(0, 0.5);
+	
+	// Death 1
+	this.hero1Icon = this.game.make.sprite(840, 19, 'hero', 0);
+	this.hero1Icon.anchor.set(0, 0.5);
+	
+	this.deathFont1 = this.game.add.retroFont('font:numbers', 20, 26, NUMBERS_STR, 6);
+	let deathScore1 = this.game.make.image(880, 19, this.deathFont1);
+	deathScore1.anchor.set(0, 0.5);
+	
+	// Death 2
+	this.hero2Icon = this.game.make.sprite(840, 70, 'hero2', 0);
+	this.hero2Icon.anchor.set(0, 0.5);
+	
+	this.deathFont2 = this.game.add.retroFont('font:numbers', 20, 26, NUMBERS_STR, 6);
+	let deathScore2 = this.game.make.image(880, 70, this.deathFont2);
+	deathScore2.anchor.set(0, 0.5);
+	
+	// Display
 	this.hud = this.game.add.group();
 	this.hud.add(coinIcon);
 	this.hud.position.set(10, 10);
+	
 	this.hud.add(coinScoreImg);
+	this.hud.add(deathScore1);
+	this.hud.add(deathScore2);
+	
 	this.hud.add(this.keyIcon);
+	this.hud.add(this.hero1Icon);
+	this.hud.add(this.hero2Icon);
 };
 PlayState._loadLevel = function(data){
 	this.bgDecoration = this.game.add.group();
@@ -319,9 +353,9 @@ PlayState._spawnCharacters = function(data){
 		let sprite = new Spider(this.game, spider.x, spider.y);
 		this.spiders.add(sprite);
 	}, this);
-	this.hero2 = new Hero(this.game, data.hero.x+940, data.hero.y, 'hero2', -180);
+	this.hero2 = new Hero(this.game, data.hero.x+940, data.hero.y, 'hero2', -180, 1);
 	this.game.add.existing(this.hero2);	
-	this.hero = new Hero(this.game, data.hero.x, data.hero.y, 'hero', 0);
+	this.hero = new Hero(this.game, data.hero.x, data.hero.y, 'hero', 0, 2);
 	this.game.add.existing(this.hero);
 };
 PlayState._spawnPistol = function(x, y){
@@ -415,6 +449,8 @@ PlayState.update = function(){
 	this._handleCollisions();
 	this._handleInput();
 	this.coinFont.text = `x${this.coinPickupCount}`;
+	this.deathFont1.text = `x${this.deathHero1}`;
+	this.deathFont2.text = `x${this.deathHero2}`;
 	this.keyIcon.frame = this.hasKey ? 1 : 0;
 };
 PlayState._handleInput = function(){
@@ -483,7 +519,7 @@ PlayState._handleCollisions = function(){
 			tempHero2 = this.hero;
 		}
 		
-		this.game.physics.arcade.collide(tempHero, this.tempHero2);
+		this.game.physics.arcade.collide(tempHero, tempHero2);
 		this.game.physics.arcade.collide(tempHero, this.platforms);
 
 		this.game.physics.arcade.collide(tempHero, tempHero2.Weapon.bullets, this._onHeroVsWeapon, null, this);
@@ -523,8 +559,8 @@ PlayState._onHeroVsEnemy = function(hero, enemy){
 		enemy.die();
 	}else{
 		this.sfx.stomp.play();
-		hero.x = 200;
-		hero.y = 200;
+		hero.x = hero.spawnPointX;
+		hero.y = hero.spawnPointY;
 	}
 };
 PlayState._onSpiderVsWeapon = function(spider, weapon){
@@ -574,9 +610,14 @@ PlayState._onHeroVsDoor = function(hero, door){
 	this.game.state.restart(true, false, {level:this.level+1});
 };
 PlayState._onHeroVsWeapon = function(hero, weapon){
+	if (hero.nbr == 1){
+		this.deathHero2++;		
+	}else{
+		this.deathHero1++;	
+	}
 	this.sfx.stomp.play();
-	hero.x = 200;
-	hero.y = 200;
+	hero.x = hero.spawnPointX;
+	hero.y = hero.spawnPointY;
 	weapon.kill();
 };
 

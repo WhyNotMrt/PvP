@@ -1,0 +1,18 @@
+{
+    "platforms": [
+		{"image": "ground", "x": 0, "y": 546}
+	],
+    "decoration": [
+    ],
+    "coins": [
+        {"x": 131, "y": 524}
+    ],
+    "shotgun": {"x": 307, "y": 520},
+    "minigun": {"x": 489, "y": 520},
+    "pistol": {"x": 239, "y": 520},
+    "sniper": {"x": 559, "y": 520},
+    "hero": {"x": 21, "y": 525},
+    "spiders": [],
+    "door": {"x": 169, "y": 546},
+    "key": {"x": 853, "y": 505}
+}
