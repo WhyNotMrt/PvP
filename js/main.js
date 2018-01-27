@@ -177,13 +177,13 @@ Weapon.prototype.shotgun = function(game, side){
 	this.bullets = [this.weapon.bullets, this.weapon1.bullets, this.weapon2.bullets, this.weapon3.bullets, this.weapon4.bullets];
 	this.type = 'shotgun';
 };
-Weapon.prototype.fire = function(){
+Weapon.prototype.fire = function(hero){
 	this.weapon.fire();
 	if(this.type == 'shotgun'){
 		this.weapon1.fire();
 		this.weapon2.fire();
 		this.weapon3.fire();
-		this.weapon4.fire();
+		this.weapon4.fire();			
 	}
 };
 Weapon.prototype.track = function(player){
@@ -222,12 +222,7 @@ PlayState.init = function(data){
 		d: Phaser.KeyCode.D,
 		space: Phaser.KeyCode.SPACEBAR,
 	});
-	this.keys.up.onDown.add(function(){
-		let didJump = this.hero2.jump();
-		if(didJump){
-			this.sfx.jump.play();
-		}	
-	}, this);
+	
 	this.coinPickupCount = 0;
 	this.hasKey = false;
 	this.level = (data.level || 0) % LEVEL_COUNT;
@@ -429,21 +424,13 @@ PlayState._handleInput = function(){
     {
         this.hero.move(-1);
 		this.hero.direction = 1;
-		if(true){
-			this.hero.Weapon.side(-180);
-		}else{
-			this.hero.Pistol.side(-180);
-		}
+		this.hero.Weapon.side(-180);
     }
     else if (this.keys.d.isDown || this.pad1.isDown(Phaser.Gamepad.XBOX360_DPAD_RIGHT) || this.pad1.axis(Phaser.Gamepad.XBOX360_STICK_LEFT_X) > 0.1)
     {
         this.hero.move(1);
 		this.hero.direction = -1;
-		if(true){
-			this.hero.Weapon.side(0);
-		}else{
-			this.hero.Pistol.side(0);
-		}
+		this.hero.Weapon.side(0);
     }else{
 		this.hero.move(0);
 	}
@@ -455,13 +442,8 @@ PlayState._handleInput = function(){
 		}
     }
 	if(this.keys.space.isDown || this.pad1.isDown(Phaser.Gamepad.XBOX360_B)){
-		if(true){
-			this.hero.Weapon.fire();
+		this.hero.Weapon.fire();
             // this.sfx.stomp.play();
-		}else{
-			this.hero.body.velocity.x = 2000*this.hero.direction;
-			this.hero.Pistol.fire();
-		}
 	}
 	
 	// Joueur 2
@@ -469,20 +451,12 @@ PlayState._handleInput = function(){
 	if (this.keys.left.isDown || this.pad2.isDown(Phaser.Gamepad.XBOX360_DPAD_LEFT) || this.pad2.axis(Phaser.Gamepad.XBOX360_STICK_LEFT_X) < -0.1)
     {
         this.hero2.move(-1);
-		if(true){
-			this.hero2.Weapon.side(-180);
-		}else{
-			this.hero2.Pistol.side(-180);
-		}
+		this.hero2.Weapon.side(-180);
     }
     else if (this.keys.right.isDown ||this.pad2.isDown(Phaser.Gamepad.XBOX360_DPAD_RIGHT) || this.pad2.axis(Phaser.Gamepad.XBOX360_STICK_LEFT_X) > 0.1)
     {
         this.hero2.move(1);
-		if(true){
-			this.hero2.Weapon.side(0);
-		}else{
-			this.hero2.Pistol.side(0);
-		}
+		this.hero2.Weapon.side(0);
     }else{
 		this.hero2.move(0);
 	}
@@ -494,12 +468,7 @@ PlayState._handleInput = function(){
 		}
     }
 	if(this.keys.zero.isDown || this.pad2.isDown(Phaser.Gamepad.XBOX360_B)){
-		if(true){
-			this.hero2.Weapon.fire();
-            // this.sfx.stomp.play();
-		}else{
-			this.hero2.Pistol.fire();
-		}
+		this.hero2.Weapon.fire();
 	}
 };
 PlayState._handleCollisions = function(){
