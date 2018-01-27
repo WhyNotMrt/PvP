@@ -1,3 +1,5 @@
+// Hero
+
 function Hero(game, x, y, hero ,side){
 	Phaser.Sprite.call(this, game, x, y, hero);
 	this.anchor.set(0.5, 0.5);
@@ -8,8 +10,9 @@ function Hero(game, x, y, hero ,side){
 	this.animations.add('jump', [3]);
 	this.animations.add('fall', [4]);
 	this.body.enable;
-	this.ShotGun = new ShotGun(game, side);
-	this.ShotGun.track(this);
+	this.Weapon = new Weapon(game, side);
+	this.Weapon.pistol(game, side);
+	this.Weapon.track(this);
 	this.direction = 0;
 }
 Hero.prototype = Object.create(Phaser.Sprite.prototype);
@@ -54,6 +57,8 @@ Hero.prototype.update = function(){
 	}
 };
 
+// Spider
+
 function Spider(game, x, y){
 	Phaser.Sprite.call(this, game, x, y, 'spider');
 	this.anchor.set(0.5);
@@ -78,7 +83,14 @@ Spider.prototype.die = function(){
 	this.body.enable = false;
 	this.animations.play('die').onComplete.addOnce(function(){this.kill();}, this);
 };
-function Pistol(game, side){
+
+// Weapons
+
+function Weapon(game, side){
+	this.type = 'null';
+}
+Weapon.prototype.constructor = Weapon;
+Weapon.prototype.pistol = function(game, side){
 	this.weapon = game.add.weapon(30, 'bullet');
 	this.weapon.bulletKillDistance = 400;
 	this.weapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
@@ -89,19 +101,34 @@ function Pistol(game, side){
 	this.weapon.fireAngle = side;
 	
 	this.bullets = this.weapon.bullets;
-}
-Pistol.prototype.constructor = Pistol;
-Pistol.prototype.fire = function(){
-	this.weapon.fire();
+	this.type = 'pistol';
 };
-Pistol.prototype.track = function(player){
-	this.weapon.trackSprite(player, 0, 0);
-};
-Pistol.prototype.side = function(side){
+Weapon.prototype.minigun = function(game, side){
+	this.weapon = game.add.weapon(30, 'bullet');
+	this.weapon.bulletKillDistance = 300;
+	this.weapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
+	this.weapon.bulletKillType = Phaser.Weapon.KILL_DISTANCE;
+	this.weapon.bulletSpeed = 400;
+	this.weapon.fireRate = 150;
+	this.weapon.bulletGravity.y = -1200;
 	this.weapon.fireAngle = side;
+	this.weapon.bulletAngleVariance = 8;
+	
+	this.bullets = this.weapon.bullets;
+	this.type = 'minigun';
 };
-
-function ShotGun(game, side){
+Weapon.prototype.sniper = function(game, side){
+	this.weapon = game.add.weapon(30, 'bullet');
+	this.weapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
+	this.weapon.bulletSpeed = 1200;
+	this.weapon.fireRate = 1400;
+	this.weapon.bulletGravity.y = -1200;
+	this.weapon.fireAngle = side;
+	
+	this.bullets = this.weapon.bullets;
+	this.type = 'sniper';
+};
+Weapon.prototype.shotgun = function(game, side){
 	this.weapon = game.add.weapon(30, 'bullet');
 	this.weapon.bulletKillDistance = 200;
 	this.weapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
@@ -148,50 +175,65 @@ function ShotGun(game, side){
 	this.weapon4.fireAngle = side-10;
 	
 	this.bullets = [this.weapon.bullets, this.weapon1.bullets, this.weapon2.bullets, this.weapon3.bullets, this.weapon4.bullets];
-}
-ShotGun.prototype.constructor = ShotGun;
-ShotGun.prototype.fire = function(){
+	this.type = 'shotgun';
+};
+Weapon.prototype.fire = function(){
 	this.weapon.fire();
-	this.weapon1.fire();
-	this.weapon2.fire();
-	this.weapon3.fire();
-	this.weapon4.fire();
+	if(this.type == 'shotgun'){
+		this.weapon1.fire();
+		this.weapon2.fire();
+		this.weapon3.fire();
+		this.weapon4.fire();
+	}
 };
-ShotGun.prototype.track = function(player){
+Weapon.prototype.track = function(player){
 	this.weapon.trackSprite(player, 0, 0);
-	this.weapon1.trackSprite(player, 0, 0);
-	this.weapon2.trackSprite(player, 0, 0);
-	this.weapon3.trackSprite(player, 0, 0);
-	this.weapon4.trackSprite(player, 0, 0);
+	if(this.type == 'shotgun'){
+		this.weapon1.trackSprite(player, 0, 0);
+		this.weapon2.trackSprite(player, 0, 0);
+		this.weapon3.trackSprite(player, 0, 0);
+		this.weapon4.trackSprite(player, 0, 0);
+	}
 };
-ShotGun.prototype.side = function(side){
+Weapon.prototype.side = function(side){
 	this.weapon.fireAngle = side;
-	this.weapon1.fireAngle = side+5;
-	this.weapon2.fireAngle = side+10;
-	this.weapon3.fireAngle = side-5;
-	this.weapon4.fireAngle = side-10;
+	if(this.type == 'shotgun'){
+		this.weapon1.fireAngle = side+5;
+		this.weapon2.fireAngle = side+10;
+		this.weapon3.fireAngle = side-5;
+		this.weapon4.fireAngle = side-10;
+	}
 };
 
+// Init Game
+
 PlayState = {};
-const LEVEL_COUNT = 2;
+const LEVEL_COUNT = 3;
 PlayState.init = function(data){
 	this.game.renderer.renderSession.roundPixels = true;
-	// this.keys = this.game.input.keyboard.addKeys({
-		// left: Phaser.KeyCode.LEFT,
-		// right: Phaser.KeyCode.RIGHT,
-		// up: Phaser.KeyCode.UP
-	// });
-	// this.keys.up.onDown.add(function(){
-		// let didJump = this.hero2.jump();
-		// if(didJump){
-			// this.sfx.jump.play();
-		// }	
-	// }, this);
+	this.keys = this.game.input.keyboard.addKeys({
+		left: Phaser.KeyCode.LEFT,
+		right: Phaser.KeyCode.RIGHT,
+		up: Phaser.KeyCode.UP,
+		zero: Phaser.KeyCode.NUMPAD_0,
+		
+		z: Phaser.KeyCode.Z,
+		q: Phaser.KeyCode.Q,
+		d: Phaser.KeyCode.D,
+		space: Phaser.KeyCode.SPACEBAR,
+	});
+	this.keys.up.onDown.add(function(){
+		let didJump = this.hero2.jump();
+		if(didJump){
+			this.sfx.jump.play();
+		}	
+	}, this);
 	this.coinPickupCount = 0;
 	this.hasKey = false;
 	this.level = (data.level || 0) % LEVEL_COUNT;
 };
 PlayState.preload = function(){
+	this.game.load.json('level:2', 'data/level02.json');
 	this.game.load.json('level:1', 'data/level01.json');
 	this.game.load.json('level:0', 'data/level00.json');
 	this.game.load.image('background', 'images/background.png');
@@ -205,6 +247,7 @@ PlayState.preload = function(){
 	this.game.load.image('font:numbers', 'images/numbers.png');
 	this.game.load.image('invisible-wall', 'images/invisible_wall.png');
 	this.game.load.image('key', 'images/key.png');
+	this.game.load.image('pistol', 'images/pistol.png');
 	this.game.load.audio('sfx:jump', 'audio/jump.wav');
 	this.game.load.audio('sfx:coin', 'audio/coin.wav');
 	this.game.load.audio('sfx:stomp', 'audio/stomp.wav');
@@ -216,6 +259,7 @@ PlayState.preload = function(){
 	this.game.load.spritesheet('hero2', 'images/hero2.png', 36, 42);
 	this.game.load.spritesheet('door', 'images/door.png', 42, 66);
 	this.game.load.spritesheet('icon:key', 'images/key_icon.png', 34, 30);
+	this.game.load.spritesheet('rifles', 'images/rifles.png', 96, 48);
 	this.game.load.image('bullet', 'images/bullet11.png')
 };
 PlayState.create = function(){
@@ -251,20 +295,22 @@ PlayState._loadLevel = function(data){
 	this.bgDecoration = this.game.add.group();
 	this.platforms = this.game.add.group();
 	this.coins = this.game.add.group();
+	this.weapons = this.game.add.group();
 	this.spiders = this.game.add.group();
 	this.enemyWalls = this.game.add.group();
 	this.enemyWalls.visible = false;
 	data.platforms.forEach(this._spawnPlatform, this);
 	this._spawnCharacters({hero: data.hero, spiders: data.spiders});
 	data.coins.forEach(this._spawnCoin, this);
+	this._spawnPistol(data.pistol.x, data.pistol.y);
+	this._spawnShotgun(data.shotgun.x, data.shotgun.y);
+	this._spawnSniper(data.sniper.x, data.sniper.y);
+	this._spawnMinigun(data.minigun.x, data.minigun.y);
 	this._spawnDoor(data.door.x, data.door.y);
 	this._spawnKey(data.key.x, data.key.y);	
 	const GRAVITY = 1200;
 	this.game.physics.arcade.gravity.y = GRAVITY;
 };
-PlayState._spawnWeapons = function(){
-	
-}
 PlayState._spawnPlatform = function(platform){
 	let sprite = this.platforms.create(platform.x, platform.y, platform.image);
 	this.game.physics.enable(sprite);
@@ -282,6 +328,60 @@ PlayState._spawnCharacters = function(data){
 	this.game.add.existing(this.hero2);	
 	this.hero = new Hero(this.game, data.hero.x, data.hero.y, 'hero', 0);
 	this.game.add.existing(this.hero);
+};
+PlayState._spawnPistol = function(x, y){
+	this.pistol = this.weapons.create(x, y, 'pistol');
+	this.pistol.anchor.set(0.5, 0.5);
+	this.game.physics.enable(this.pistol);
+	this.pistol.body.allowGravity = false;	
+	this.pistol.y -=3;
+	this.game.add.tween(this.pistol)
+		.to({y: this.pistol.y + 6}, 800, Phaser.Easing.Sinusoidal.InOut)
+		.yoyo(true)
+		.loop()
+		.start();
+};
+PlayState._spawnSniper = function(x, y){
+	this.sniper = this.weapons.create(x, y, 'rifles');
+	this.sniper.anchor.set(0.5, 0.5);
+	this.sniper.animations.add('sniper', [2]);
+	this.sniper.animations.play('sniper');
+	this.game.physics.enable(this.sniper);
+	this.sniper.body.allowGravity = false;	
+	this.sniper.y -=3;
+	this.game.add.tween(this.sniper)
+		.to({y: this.sniper.y + 6}, 800, Phaser.Easing.Sinusoidal.InOut)
+		.yoyo(true)
+		.loop()
+		.start();
+};
+PlayState._spawnShotgun = function(x, y){
+	this.shotgun = this.weapons.create(x, y, 'rifles');
+	this.shotgun.anchor.set(0.5, 0.5);
+	this.shotgun.animations.add('shotgun', [0]);
+	this.shotgun.animations.play('shotgun');
+	this.game.physics.enable(this.shotgun);
+	this.shotgun.body.allowGravity = false;	
+	this.shotgun.y -=3;
+	this.game.add.tween(this.shotgun)
+		.to({y: this.shotgun.y + 6}, 800, Phaser.Easing.Sinusoidal.InOut)
+		.yoyo(true)
+		.loop()
+		.start();
+};
+PlayState._spawnMinigun = function(x, y){
+	this.minigun = this.weapons.create(x, y, 'rifles');
+	this.minigun.anchor.set(0.5, 0.5);
+	this.minigun.animations.add('minigun', [3]);
+	this.minigun.animations.play('minigun');
+	this.game.physics.enable(this.minigun);
+	this.minigun.body.allowGravity = false;	
+	this.minigun.y -=3;
+	this.game.add.tween(this.minigun)
+		.to({y: this.minigun.y + 6}, 800, Phaser.Easing.Sinusoidal.InOut)
+		.yoyo(true)
+		.loop()
+		.start();
 };
 PlayState._spawnCoin = function (coin){
 	let sprite = this.coins.create(coin.x, coin.y, 'coin');
@@ -323,83 +423,80 @@ PlayState.update = function(){
 	this.keyIcon.frame = this.hasKey ? 1 : 0;
 };
 PlayState._handleInput = function(){
-	// if(this.keys.left.isDown){
-		// this.hero2.move(-1);
-	// }else if(this.keys.right.isDown){
-		// this.hero2.move(1);
-	// }else{
-		// this.hero2.move(0);
-	// }
-	if (this.pad1.isDown(Phaser.Gamepad.XBOX360_DPAD_LEFT) || this.pad1.axis(Phaser.Gamepad.XBOX360_STICK_LEFT_X) < -0.1)
+	// Joueur 1
+	
+	if (this.keys.q.isDown || this.pad1.isDown(Phaser.Gamepad.XBOX360_DPAD_LEFT) || this.pad1.axis(Phaser.Gamepad.XBOX360_STICK_LEFT_X) < -0.1)
     {
         this.hero.move(-1);
 		this.hero.direction = 1;
 		if(true){
-			this.hero.ShotGun.side(-180);
+			this.hero.Weapon.side(-180);
 		}else{
 			this.hero.Pistol.side(-180);
 		}
     }
-    else if (this.pad1.isDown(Phaser.Gamepad.XBOX360_DPAD_RIGHT) || this.pad1.axis(Phaser.Gamepad.XBOX360_STICK_LEFT_X) > 0.1)
+    else if (this.keys.d.isDown || this.pad1.isDown(Phaser.Gamepad.XBOX360_DPAD_RIGHT) || this.pad1.axis(Phaser.Gamepad.XBOX360_STICK_LEFT_X) > 0.1)
     {
         this.hero.move(1);
 		this.hero.direction = -1;
 		if(true){
-			this.hero.ShotGun.side(0);
+			this.hero.Weapon.side(0);
 		}else{
 			this.hero.Pistol.side(0);
 		}
     }else{
 		this.hero.move(0);
 	}
-	if (this.pad1.justPressed(Phaser.Gamepad.XBOX360_A))
+	if (this.keys.z.isDown || this.pad1.justPressed(Phaser.Gamepad.XBOX360_A))
     {
        let didJump = this.hero.jump();
 		if(didJump){
 			this.sfx.jump.play();
 		}
     }
-	if(this.pad1.justPressed(Phaser.Gamepad.XBOX360_B)){
+	if(this.keys.space.isDown || this.pad1.isDown(Phaser.Gamepad.XBOX360_B)){
 		if(true){
-			this.hero.ShotGun.fire();
-            this.sfx.stomp.play();
+			this.hero.Weapon.fire();
+            // this.sfx.stomp.play();
 		}else{
 			this.hero.body.velocity.x = 2000*this.hero.direction;
 			this.hero.Pistol.fire();
 		}
 	}
 	
-	if (this.pad2.isDown(Phaser.Gamepad.XBOX360_DPAD_LEFT) || this.pad2.axis(Phaser.Gamepad.XBOX360_STICK_LEFT_X) < -0.1)
+	// Joueur 2
+	
+	if (this.keys.left.isDown || this.pad2.isDown(Phaser.Gamepad.XBOX360_DPAD_LEFT) || this.pad2.axis(Phaser.Gamepad.XBOX360_STICK_LEFT_X) < -0.1)
     {
         this.hero2.move(-1);
 		if(true){
-			this.hero2.ShotGun.side(-180);
+			this.hero2.Weapon.side(-180);
 		}else{
 			this.hero2.Pistol.side(-180);
 		}
     }
-    else if (this.pad2.isDown(Phaser.Gamepad.XBOX360_DPAD_RIGHT) || this.pad2.axis(Phaser.Gamepad.XBOX360_STICK_LEFT_X) > 0.1)
+    else if (this.keys.right.isDown ||this.pad2.isDown(Phaser.Gamepad.XBOX360_DPAD_RIGHT) || this.pad2.axis(Phaser.Gamepad.XBOX360_STICK_LEFT_X) > 0.1)
     {
         this.hero2.move(1);
 		if(true){
-			this.hero2.ShotGun.side(0);
+			this.hero2.Weapon.side(0);
 		}else{
 			this.hero2.Pistol.side(0);
 		}
     }else{
 		this.hero2.move(0);
 	}
-	if (this.pad2.justPressed(Phaser.Gamepad.XBOX360_A))
+	if (this.keys.up.isDown || this.pad2.justPressed(Phaser.Gamepad.XBOX360_A))
     {
        let didJump = this.hero2.jump();
 		if(didJump){
 			this.sfx.jump.play();
 		}
     }
-	if(this.pad2.justPressed(Phaser.Gamepad.XBOX360_B)){
+	if(this.keys.zero.isDown || this.pad2.isDown(Phaser.Gamepad.XBOX360_B)){
 		if(true){
-			this.hero2.ShotGun.fire();
-            this.sfx.stomp.play();
+			this.hero2.Weapon.fire();
+            // this.sfx.stomp.play();
 		}else{
 			this.hero2.Pistol.fire();
 		}
@@ -408,40 +505,36 @@ PlayState._handleInput = function(){
 PlayState._handleCollisions = function(){
 	this.game.physics.arcade.collide(this.spiders, this.enemyWalls);
 	this.game.physics.arcade.collide(this.spiders, this.platforms);
-	this.game.physics.arcade.collide(this.hero2, this.hero);
-	this.game.physics.arcade.collide(this.hero, this.hero2);
-	this.game.physics.arcade.collide(this.hero2, this.platforms);
-	this.game.physics.arcade.collide(this.hero, this.platforms);
-	if(true){
-		this.game.physics.arcade.collide(this.hero, this.hero2.ShotGun.bullets, this._onHeroVsWeapon, null, this);
-		this.game.physics.arcade.collide(this.hero2, this.hero.ShotGun.bullets, this._onHeroVsWeapon, null, this);
-		this.game.physics.arcade.collide(this.hero.ShotGun.bullets, this.platforms, this._WeaponVsPlat, null, this);
-		this.game.physics.arcade.collide(this.hero2.ShotGun.bullets, this.platforms, this._WeaponVsPlat, null, this);
-		this.game.physics.arcade.collide(this.spiders, this.hero.ShotGun.bullets, this._onSpiderVsWeapon, null, this);
-		this.game.physics.arcade.collide(this.spiders, this.hero2.ShotGun.bullets, this._onSpiderVsWeapon, null, this);
-	}else{
-		this.game.physics.arcade.collide(this.hero, this.hero2.Pistol.bullets, this._onHeroVsWeapon, null, this);
-		this.game.physics.arcade.collide(this.hero2, this.hero.Pistol.bullets, this._onHeroVsWeapon, null, this);
-		this.game.physics.arcade.collide(this.hero.Pistol.bullets, this.platforms, this._WeaponVsPlat, null, this);
-		this.game.physics.arcade.collide(this.hero2.Pistol.bullets, this.platforms, this._WeaponVsPlat, null, this);
-		this.game.physics.arcade.collide(this.spiders, this.hero.Pistol.bullets, this._onSpiderVsWeapon, null, this);
-		this.game.physics.arcade.collide(this.spiders, this.hero2.Pistol.bullets, this._onSpiderVsWeapon, null, this);
+	for(var i = 0; i < 2; i++){
+		if (i == 0){
+			tempHero = this.hero;
+			tempHero2 = this.hero2;
+		}else{
+			tempHero = this.hero2;
+			tempHero2 = this.hero;
+		}
+		
+		this.game.physics.arcade.collide(tempHero, this.tempHero2);
+		this.game.physics.arcade.collide(tempHero, this.platforms);
+
+		this.game.physics.arcade.collide(tempHero, tempHero2.Weapon.bullets, this._onHeroVsWeapon, null, this);
+		this.game.physics.arcade.collide(tempHero.Weapon.bullets, this.platforms, this._WeaponVsPlat, null, this);
+		this.game.physics.arcade.collide(this.spiders, tempHero.Weapon.bullets, this._onSpiderVsWeapon, null, this);
+
+		this.game.physics.arcade.overlap(tempHero, this.shotgun, this._onHeroVsShotgun, null, this);
+		this.game.physics.arcade.overlap(tempHero, this.minigun, this._onHeroVsMinigun, null, this);
+		this.game.physics.arcade.overlap(tempHero, this.pistol, this._onHeroVsPistol, null, this);
+		this.game.physics.arcade.overlap(tempHero, this.sniper, this._onHeroVsSniper, null, this);
+		
+		this.game.physics.arcade.overlap(tempHero, this.coins, this._onHeroVsCoin, null, this);
+		this.game.physics.arcade.overlap(tempHero, this.spiders, this._onHeroVsEnemy, null, this);
+		this.game.physics.arcade.overlap(tempHero, this.key, this._onHeroVsKey, null, this);
+		this.game.physics.arcade.overlap(tempHero, this.door, this._onHeroVsDoor, 
+			function(hero, door){
+				return this.hasKey && hero.body.touching.down;
+			}, this);
+		}
 	}
-	this.game.physics.arcade.overlap(this.hero, this.coins, this._onHeroVsCoin, null, this);
-	this.game.physics.arcade.overlap(this.hero2, this.coins, this._onHeroVsCoin, null, this);
-	this.game.physics.arcade.overlap(this.hero, this.spiders, this._onHeroVsEnemy, null, this);
-	this.game.physics.arcade.overlap(this.hero2, this.spiders, this._onHeroVsEnemy, null, this);
-	this.game.physics.arcade.overlap(this.hero, this.key, this._onHeroVsKey, null, this);
-	this.game.physics.arcade.overlap(this.hero2, this.key, this._onHeroVsKey, null, this);
-	this.game.physics.arcade.overlap(this.hero, this.door, this._onHeroVsDoor, 
-		function(hero, door){
-			return this.hasKey && hero.body.touching.down;
-		}, this);
-	this.game.physics.arcade.overlap(this.hero2, this.door, this._onHeroVsDoor, 
-		function(hero, door){
-			return this.hasKey && hero.body.touching.down;
-		}, this);
-};
 PlayState._onBVsB = function(b1, b2){
 		b1.kill();
 		b2.kill();
@@ -461,13 +554,46 @@ PlayState._onHeroVsEnemy = function(hero, enemy){
 		enemy.die();
 	}else{
 		this.sfx.stomp.play();
-		this.game.state.restart(true, false, {level:this.level});
+		hero.x = 200;
+		hero.y = 200;
 	}
 };
 PlayState._onSpiderVsWeapon = function(spider, weapon){
 		this.sfx.stomp.play();
 		spider.die();
 		weapon.kill();
+};
+PlayState._onHeroVsPistol = function(hero, pistol){
+	hero.Weapon.pistol(this.game, 1);
+	hero.Weapon.track(hero);
+	hero.Weapon.type = 'pistol';
+	
+	this.sfx.key.play();
+	pistol.kill();
+};
+PlayState._onHeroVsSniper = function(hero, sniper){
+	hero.Weapon.sniper(this.game, 1);
+	hero.Weapon.track(hero);
+	hero.Weapon.type = 'sniper';
+	
+	this.sfx.key.play();
+	sniper.kill();
+};
+PlayState._onHeroVsShotgun = function(hero, shotgun){
+	hero.Weapon.shotgun(this.game, 1);
+	hero.Weapon.track(hero);
+	hero.Weapon.type = 'shotgun';
+	
+	this.sfx.key.play();
+	shotgun.kill();
+};
+PlayState._onHeroVsMinigun = function(hero, minigun){
+	hero.Weapon.minigun(this.game, 1);
+	hero.Weapon.track(hero);
+	hero.Weapon.type = 'minigun';
+	
+	this.sfx.key.play();
+	minigun.kill();
 };
 PlayState._onHeroVsKey = function(hero, key){
 	this.sfx.key.play();
